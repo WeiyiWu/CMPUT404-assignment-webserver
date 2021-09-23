@@ -1,5 +1,6 @@
 #  coding: utf-8 
 import socketserver
+import os
 
 # Copyright 2013 Abram Hindle, Eddie Antonio Santos
 # 
@@ -28,11 +29,51 @@ import socketserver
 
 
 class MyWebServer(socketserver.BaseRequestHandler):
+
+    def read_request(self, request):
+        # check method
+        if request[0] != 'GET':
+            header = "HTTP/1.1 405 Method Not Allowed\r\n"
+            return header, '405 Method Not Allowed'
+        
+        root_path = './www'
+        file_path = os.path.abspath(root_path+request[1])
+        # check if path inside directory & if path exists
+        if not file_path.startswith(os.getcwd()) or not os.path.exists(file_path):
+            header = "HTTP/1.1 404 Not Found\r\n"
+            return header, '404 Not Found'
+
+        # if directory
+        if os.path.isdir(file_path):
+            content = ''
+            if request[1][-1] != '/':
+                file_path += '/'
+                header = "HTTP/1.1 301 Moved Permanently\r\n"
+                header += 'Location: ' + request[1] + '\r\n'
+            else:
+                header = "HTTP/1.1 200 OK\r\n"
+                f = open(file_path + '/index.html', 'r')
+                content = f.read(1024)
+                header += 'Content-Type: text/html\r\n'
+            return header, content
+
+        # else, read file
+        f = open(file_path, 'r')
+        content = f.read(1024)
+        # check file type
+        if file_path.endswith('.html'):
+            type = 'Content-Type: text/html\r\n'
+        elif file_path.endswith('.css'):
+            type = 'Content-Type: text/css\r\n'
+        return "HTTP/1.1 200 OK\r\n" + type, content
     
     def handle(self):
         self.data = self.request.recv(1024).strip()
         print ("Got a request of: %s\n" % self.data)
-        self.request.sendall(bytearray("OK",'utf-8'))
+        re = self.data.decode('utf-8').split('\n')
+        # read request
+        header, content = self.read_request(re[0].split(' '))
+        self.request.sendall(bytearray(header + "\r\n\r\n" + content, 'utf-8'))
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
