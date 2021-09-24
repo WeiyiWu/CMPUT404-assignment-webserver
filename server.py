@@ -75,8 +75,12 @@ class MyWebServer(socketserver.BaseRequestHandler):
         re = self.data.decode('utf-8').split('\n')
         # read request
         host = [h for h in re if h.startswith('Host:')]
-        host = host[0].split(' ')
-        header, content = self.read_request(re[0].split(' '), host[1].strip('\r'))
+        if len(host) != 0:
+            host = host[0].split(' ')
+            host = host[1].strip('\r')
+        else:
+            host = ''
+        header, content = self.read_request(re[0].split(' '), host)
         self.request.sendall(bytearray(header + "\r\n\r\n" + content, 'utf-8'))
 
 if __name__ == "__main__":
