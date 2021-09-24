@@ -48,7 +48,6 @@ class MyWebServer(socketserver.BaseRequestHandler):
             content = ''
             if request[1][-1] != '/':
                 host = 'http://' + host
-                print('host === ', bytearray(host, 'utf-8'))
                 location = 'Location: ' + host + request[1] + '/\r\n'
                 header = "HTTP/1.1 301 Moved Permanently\r\n"
                 header += location
