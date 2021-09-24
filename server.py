@@ -30,7 +30,7 @@ import os
 
 class MyWebServer(socketserver.BaseRequestHandler):
 
-    def read_request(self, request):
+    def read_request(self, request, host):
         # check method
         if request[0] != 'GET':
             header = "HTTP/1.1 405 Method Not Allowed\r\n"
@@ -47,9 +47,11 @@ class MyWebServer(socketserver.BaseRequestHandler):
         if os.path.isdir(file_path):
             content = ''
             if request[1][-1] != '/':
-                file_path += '/'
+                host = 'http://' + host
+                print('host === ', bytearray(host, 'utf-8'))
+                location = 'Location: ' + host + request[1] + '/\r\n'
                 header = "HTTP/1.1 301 Moved Permanently\r\n"
-                header += 'Location: ' + request[1] + '\r\n'
+                header += location
             else:
                 header = "HTTP/1.1 200 OK\r\n"
                 f = open(file_path + '/index.html', 'r')
@@ -72,7 +74,9 @@ class MyWebServer(socketserver.BaseRequestHandler):
         print ("Got a request of: %s\n" % self.data)
         re = self.data.decode('utf-8').split('\n')
         # read request
-        header, content = self.read_request(re[0].split(' '))
+        host = [h for h in re if h.startswith('Host:')]
+        host = host[0].split(' ')
+        header, content = self.read_request(re[0].split(' '), host[1].strip('\r'))
         self.request.sendall(bytearray(header + "\r\n\r\n" + content, 'utf-8'))
 
 if __name__ == "__main__":
